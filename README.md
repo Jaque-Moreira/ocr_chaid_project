@@ -46,3 +46,6 @@ O projeto é composto por scripts independentes, executados conforme a necessida
    avalia cada alternativa individualmente e identifica se a opção foi marcada ou não com base na quantidade de pixels
    escuros dentro da região delimitada. Para cada alternativa, o script registra se houve marcação (0 ou 1) e o total de pixels
    escuros detectados, consolidando os resultados em um arquivo CSV estruturado.
+
+6. ## Teste de sincronização com GitHub
+
