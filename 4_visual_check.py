@@ -2,16 +2,17 @@ import cv2
 import json
 from pathlib import Path
 
+BASE_DIR = Path(__file__).resolve().parent
 
-with open("coordenadas_formulario.json", "r", encoding="utf-8") as f:
+json_path = BASE_DIR / "outcome" / "coordenadas.json"
+
+with open(json_path, "r", encoding="utf-8") as f:
     coordenadas = json.load(f)
 
 # Converter de volta para tupla (opcional)
 coordenadas = {k: tuple(v) for k, v in coordenadas.items()}
 
 # === CONFIGURAÇÕES ===
-BASE_DIR = Path(__file__).resolve().parent
-
 IMG_PATH = BASE_DIR / "data" / "mock_data_forms_jpg"/"page_01.jpg"
 
 # === CARREGAR IMAGEM ===
@@ -39,3 +40,4 @@ output_path = BASE_DIR / "outcome" / "visual_check_box.png"
 
 cv2.imwrite(str(output_path), img)
 print("💾 Imagem com marcações salva como 'visual_check_box.png'.")
+
