@@ -1,24 +1,41 @@
 from pdf2image import convert_from_path
+from pathlib import Path
 import os
 
-pdf_path = r"C:\\Users\\morei\\OneDrive\\Documentos\\Workspace\\Ocerizacao\\mock_data_forms.pdf"
+# ==========================
+# CONFIGURAÇÕES DE PATH
+# ==========================
 
-output_folder = r"C:\\Users\\morei\\OneDrive\\Documentos\\Workspace\\Ocerizacao\\mock_data_forms_jpg"
+POPPLER_PATH = Path(
+    r"C:\Users\morei\anaconda3\envs\compativel_workspace\Library\bin"
+)
 
-# Garante que a pasta existe
+BASE_DIR = Path(__file__).resolve().parent
+
+pdf_path = BASE_DIR / "data" / "mock_data_forms.pdf"
+output_folder = BASE_DIR / "data" / "mock_data_forms_jpg"
+
+# ==========================
+# VALIDAÇÕES
+# ==========================
+
+if not pdf_path.exists():
+    raise FileNotFoundError(f"PDF não encontrado: {pdf_path}")
+
 os.makedirs(output_folder, exist_ok=True)
 
-# Converte todas as páginas
-pages = convert_from_path(pdf_path, dpi=400)
+# ==========================
+# CONVERSÃO PDF → JPG
+# ==========================
 
-# Salva cada página como JPG
+pages = convert_from_path(
+    pdf_path,
+    dpi=400,
+    poppler_path=str(POPPLER_PATH)
+)
+
 for i, page in enumerate(pages, start=1):
-    if i <10:
-        output_path = os.path.join(output_folder, f"page_0{i}.jpg")
-        page.save(output_path, "JPEG")
-        print(f"✅ Página {i} salva em: {output_path}")
-    else:
-        output_path = os.path.join(output_folder, f"page_{i}.jpg")
-        page.save(output_path, "JPEG")
-        print(f"✅ Página {i} salva em: {output_path}")
-    
+    nome = f"page_{i:02d}.jpg"   # page_01.jpg, page_02.jpg ...
+    output_path = output_folder / nome
+    page.save(output_path, "JPEG")
+    print(f"✅ Página {i} salva em: {output_path}")
