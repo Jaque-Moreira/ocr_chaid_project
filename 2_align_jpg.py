@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+from pathlib import Path
 import os
 
 # ---------------------------
@@ -42,9 +43,11 @@ def alinhar_imagem(img, template):
 # PROCESSAR TODAS AS IMAGENS DE UMA PASTA
 # ---------------------------
 
-template_path = r"C:\\Users\\morei\\Documents\\Workspace\\Ocerizacao\\paginas_jpg\\page_01.jpg"
-input_folder = r"C:\\Users\\morei\\Documents\\Workspace\\Ocerizacao\\paginas_jpg\\911"
-output_folder = r"C:\\Users\\morei\\Documents\\Workspace\\Ocerizacao\\paginas_jpg_alinhadas\\911"
+BASE_DIR = Path(__file__).resolve().parent
+
+template_path = BASE_DIR / "data" / "mock_data_forms_jpg"/"page_01.jpg"
+input_folder = BASE_DIR / "data" / "mock_data_forms_jpg"
+output_folder = BASE_DIR / "data" / "mock_data_aligned_jpg"
 
 # Garante que a pasta de saída exista
 os.makedirs(output_folder, exist_ok=True)

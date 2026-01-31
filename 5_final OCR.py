@@ -3,8 +3,13 @@ import numpy as np
 import pandas as pd
 import os
 import json
+from pathlib import Path
 
-with open("coordenadas_formulario.json", "r", encoding="utf-8") as f:
+BASE_DIR = Path(__file__).resolve().parent
+
+json_path = BASE_DIR / "outcome" / "coordenadas.json"
+
+with open(json_path, "r", encoding="utf-8") as f:
     coordenadas = json.load(f)
 
 # Converter de volta para tupla (opcional)
@@ -19,7 +24,7 @@ SUBPASTA = ""
 # PASTA = (fr"C:\Users\morei\Documents\Workspace\Ocerizacao\paginas_jpg_alinhadas\\{SUBPASTA}")
 
 
-PASTA = (fr"C:\\Users\\morei\\OneDrive\\Documentos\\Workspace\\Ocerizacao\\github\\mock_data_aligned_jpg")
+PASTA = BASE_DIR / "data" / "mock_data_aligned_jpg"
 
 # ----- FUNÇÃO PARA AVALIAR PIXELS ESCUROS NO ESPAÇO DA ALTERNATIVA -----
 
@@ -58,7 +63,7 @@ def verificar_questionario(img, coordenadas):
 
 # --------------- PROCESSAR TODAS AS IMAGENS DE UMA PASTA ---------------
 
-def processar_pasta(pasta_imagens, coordenadas, arquivo_saida="resultado_final.csv"):
+def processar_pasta(pasta_imagens, coordenadas, arquivo_saida):
     linhas_csv = []
     extensoes_validas = (".jpg", ".jpeg", ".png", ".tif", ".bmp")
 
@@ -84,7 +89,7 @@ def processar_pasta(pasta_imagens, coordenadas, arquivo_saida="resultado_final.c
             marcada_01 = 1 if info["marcada"] else 0
             
             linhas_csv.append({
-                "sala": SALA,
+                "sala": SUBPASTA,
                 "pagina": i,
                 "alternativa": alternativa,
                 "marcada": marcada_01,
@@ -100,6 +105,7 @@ def processar_pasta(pasta_imagens, coordenadas, arquivo_saida="resultado_final.c
 
 
 # --------------- EXECUÇÃO ---------------
+arquivo_saida = BASE_DIR / "outcome" / f"resultado_final_{SUBPASTA}.csv"
+df = processar_pasta(PASTA, coordenadas, arquivo_saida)
 
-df = processar_pasta(PASTA, coordenadas, (f"resultado_final_{SALA}.csv"))
 

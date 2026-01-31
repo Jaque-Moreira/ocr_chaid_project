@@ -1,6 +1,7 @@
 import cv2
-
 import json
+from pathlib import Path
+
 
 with open("coordenadas_formulario.json", "r", encoding="utf-8") as f:
     coordenadas = json.load(f)
@@ -9,7 +10,9 @@ with open("coordenadas_formulario.json", "r", encoding="utf-8") as f:
 coordenadas = {k: tuple(v) for k, v in coordenadas.items()}
 
 # === CONFIGURAÇÕES ===
-IMG_PATH = "C:\\Users\\morei\\OneDrive\\Documentos\\Workspace\\Ocerizacao\\github\\mock_data_forms_jpg\\page_01.jpg"
+BASE_DIR = Path(__file__).resolve().parent
+
+IMG_PATH = BASE_DIR / "data" / "mock_data_forms_jpg"/"page_01.jpg"
 
 # === CARREGAR IMAGEM ===
 img = cv2.imread(IMG_PATH)
@@ -30,8 +33,9 @@ for alt, (x, y, w, h) in coordenadas.items():
 # cv2.waitKey(0)
 # cv2.destroyAllWindows()
 
-# === OPCIONAL: SALVAR VERSÃO COM MARCAÇÕES ===
-cv2.imwrite("verificacao_caixas.png", img)
-print("💾 Imagem com marcações salva como 'verificacao_caixas.png'.")
+# === SALVA VERSÃO COM MARCAÇÕES ===
 
+output_path = BASE_DIR / "outcome" / "visual_check_box.png"
 
+cv2.imwrite(str(output_path), img)
+print("💾 Imagem com marcações salva como 'visual_check_box.png'.")

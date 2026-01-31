@@ -6,9 +6,6 @@ import os
 # CONFIGURAÇÕES DE PATH
 # ==========================
 
-#POPPLER_PATH = Path(
-#   r"C:\Users\morei\anaconda3\envs\compativel_workspace\Library\bin"
-#)
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -31,7 +28,6 @@ os.makedirs(output_folder, exist_ok=True)
 pages = convert_from_path(
     pdf_path,
     dpi=400
-    #poppler_path=str(POPPLER_PATH)
 )
 
 for i, page in enumerate(pages, start=1):

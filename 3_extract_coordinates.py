@@ -1,8 +1,13 @@
+import json
 import cv2
+from pathlib import Path
 
 # === CONFIGURAÇÃO ===
-IMAGEM_PATH = "C:\\Users\\morei\\OneDrive\\Documentos\\Workspace\\Ocerizacao\\github\\mock_data_forms_jpg\\page_01.jpg" # pode ser .png ou extraída do PDF
-ESCALA = 0.18  # redimensiona visualização (não altera coordenadas reais)
+
+BASE_DIR = Path(__file__).resolve().parent
+
+IMAGEM_PATH = BASE_DIR / "data" / "mock_data_forms_jpg"/"page_01.jpg" # pode ser .png ou extraída do PDF
+ESCALA = 0.20  # redimensiona visualização (não altera coordenadas reais)
 
 # === LISTAS GLOBAIS ===
 pontos_display = []   # coordenadas na imagem redimensionada
@@ -84,13 +89,18 @@ for k, v in coordenadas.items():
     print(f'"{k}": {v}')
     
 
-import json
+# ==========================
+# SALVAR JSON
+# ==========================
 
 # JSON não suporta tuplas → converter para lista
 coordenadas_json = {k: list(v) for k, v in coordenadas.items()}
 
-with open("coordenadas_formulario.json", "w", encoding="utf-8") as f:
+json_path = BASE_DIR / "outcome" / "coordenadas.json"
+
+with open(json_path, "w", encoding="utf-8") as f:
     json.dump(coordenadas_json, f, indent=4, ensure_ascii=False)
+print(f"\n✅ JSON salvo com sucesso em:\n{json_path}")
 
 
 
