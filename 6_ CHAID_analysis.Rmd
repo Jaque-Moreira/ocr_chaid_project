@@ -1,0 +1,353 @@
+---
+title: "Análise Descritiva OCR outcome'"
+output: html_document
+date: "2025-11-17"
+---
+
+```{r "library", include=FALSE}
+# #Instalando e carregando pacotes necessários
+# 
+# install.packages("CHAID", repos="http://R-Forge.R-project.org")
+# install.packages("ggparty")
+# install.packages(kableExtra)
+
+library(tidyverse)# readr;ggplot2;dplyr;purrr etc
+library(rmdformats)
+library(CHAID)
+#install.packages("CHAID", repos="http://R-Forge.R-project.org")
+
+library(caret)
+library(kableExtra) # just to make the output nicer
+#library(CGPfunctions)
+#if (!require("devtools")) install.packages("devtools")
+#devtools::install_github("ibecav/CGPfunctions")
+library (rsample) # for dataset and splitting also loads broom and tidyr
+library(knitr)
+
+library(mixtools)
+library(readxl)
+library(patchwork)
+library(magrittr)
+
+require(rsample) # for dataset and splitting also loads broom and tidyr
+
+library(dplyr)
+library(knitr)
+library(here)
+
+    # Alterar family font
+    # install.packages("showtext")
+    # library(showtext)
+    # font_add_google("Montserrat", "montserrat")
+    # showtext_auto()
+
+```
+
+# Carregando banco de dados vindo da extração 5_final OCR.py
+```{r, "carregando banco de dados"}
+
+
+# Carregando extração dos dados OCR em formato de tabela longa
+# ==========================
+
+dados_long <- read.csv2(
+  here("ocr-chaid-project","outcome", "resultado_final_.csv"),
+  header = TRUE,
+  sep = ","
+)
+
+# Convertendo tabela em formato wide (alternativas como colunas)
+# ==========================
+
+dados <- as.data.frame(lapply(dados_long %>%
+  select(sala, pagina, alternativa, marcada) %>%
+  pivot_wider(
+    names_from  = alternativa,
+    values_from = marcada,
+    values_fill = 0
+  ), as.factor))
+
+
+### sugestão para manter as colunas em ordem:
+
+# ordem_alternativas <- c(
+#   "1a","1b","1c","1d","1e","1f","1g",
+#   "2a","2b","2c","2d","2e","2f",
+#   "3a","3b","3c",
+#   "4a","4b","4c","4d","4e","4f",
+#   "6a","6b"
+# )
+# 
+# dados_wide <- dados %>%
+#   select(sala, pagina, all_of(ordem_alternativas), marcada) %>%
+#   pivot_wider(
+#     names_from  = alternativa,
+#     values_from = marcada,
+#     values_fill = 0
+#   )
+
+dados <- dados %>%
+  mutate(X6 = case_when(
+    X6a == "1" ~ "a",
+    X6b == "1" ~ "b"))
+
+dados <- dados %>% select(,-"X6a",-"X6b")
+
+dados <- as.data.frame(lapply(dados, as.factor))
+
+head(dados)
+```
+
+# Carregando banco de dados genérico para demonstração da análise estatística
+```{r, "carregando mock data set"}
+
+
+# Carregando dados já em formato wide (alternativas como colunas)
+# ==========================
+
+dados <- as.data.frame(lapply(read.csv2(
+  here("ocr-chaid-project","data", "mock_data_base_for_CHAID.csv"),
+  header = TRUE,
+  sep = ";"
+),as.factor))
+
+dados <- dados %>%
+  mutate(X6 = case_when(
+    X6a == "1" ~ "a",
+    X6b == "1" ~ "b"))
+
+dados <- dados %>% select(,-"X6a",-"X6b")
+
+dados <- as.data.frame(lapply(dados, as.factor))
+
+head(dados)
+```
+
+# Indice
+
+## 1 - O que eu acho mais dificil em ser um adolescente?
+1a Pressão social (Ex: dos colegas, amigos...)
+1b Problemas de auto estima (Ex: aparência, incapacidade)
+1c Saúde mental (não saber lidar com as emoções
+1d Problemas familiares
+1e Problemas escolares
+1f Dificuldade de identidade (Não ter certeza quem é)
+1g Outro
+
+## 2 - Como meu corpo mostra que algo não está bem com as minhas emoções?
+2a Tensão muscular
+2b Dor de Cabeça
+2c Dificuldade para respirar
+2d Insônia
+2e Coração acelerado
+2f Outra sensação?
+
+## 3 - Você já teve pensamentos como 'Sou um peso na vida dos outros' - 'Os outros serão mais felizes sem mim' - 'A minha vida não tem mais sentido' - 'Só sinto um grande vazio' - 'Eu queria dormir para sempre'?
+3a Nunca tive
+3b Sim, algumas vezes
+3c Sim, sempre tenho
+
+## 4 -Quando eu fico muito preocupado (a), triste, com medo ou ansioso (a), o que na maioria das vezes eu costumo fazer?
+4a Converso com alguém
+4b Faço alguma atividade que gosto
+4c Vou a algum lugar que me faz bem
+4d Me isolo
+4e Me machuco (autolesão)
+4f Outro
+
+## 5 - O que posso começar a fazer para cuidar melhor de mim e das minhas emoções?
+questão dissertativa
+
+## 6 - Gostaria de receber ajuda para saber lidar com suas emoções?
+6a Sim, Meu nome é
+6b Não. No momento não preciso
+
+# DATA VISUALIZATION EXAMPLES
+
+### Filtro 1: AUTOLESÃO
+Todos aqueles que assinalaram a alternativa “4e” afirmando que se autolesionam como mecanismo de alivio para a ansiedade.
+
+```{r "Filtro autolesão"}
+autolesao = dados %>% filter(X4e == 1)
+
+```
+
+```{r, "filtro autolesao_q1"}
+autolesao_q1 <- data.frame(
+  alternativa = names(autolesao %>% select(X1a,X1b,X1c,X1d,X1e,X1f,X1g)),
+  qtd_marcada = as.numeric(colSums(autolesao %>% select(X1a,X1b,X1c,X1d,X1e,X1f,X1g) == 1, na.rm = TRUE))
+)
+
+autolesao_q1 <- autolesao_q1 %>% mutate(alternativa = case_when(
+  alternativa == "X1a" ~ "1a - Pressão social",
+  alternativa == "X1b" ~ "1b - Problemas de auto estima",
+  alternativa == "X1c" ~ "1c - Saúde mental",
+  alternativa == "X1d" ~ "1d - Problemas familiares",
+  alternativa == "X1e" ~ "1e - Problemas escolares",
+  alternativa == "X1f" ~ "1f - Dificuldade de identidade",
+  alternativa == "X1g" ~ "1g - Outro"))
+```
+
+```{r "plot autolesao_q1", message=FALSE, warning=FALSE}
+autolesao_q1_plot <- autolesao_q1 %>% ggplot(mapping = (aes(x=str_wrap(alternativa, width = 10),
+                                                            y = qtd_marcada))) +
+  
+  # Construindo gráficos
+  geom_col(fill = "#002952") + 
+  
+  # definindo Titulos
+  labs(title = "AUTOLESÃO - Questão 1", 
+       subtitle = "O que eu acho mais dificil em ser um adolescente",
+       y = "qtd de alunos que assinalaram",
+       x= "Alternativas") + 
+  
+  # label
+  geom_text(aes(label = qtd_marcada), position = position_dodge(width = 0.9), vjust = -0.5, size = 3) + 
+  
+  scale_y_continuous(breaks=seq(0,23,2)) +
+  ylim(0, 23) +
+
+       
+  # alterando aparecia
+  theme_classic( base_family = "montserrat")+
+  theme(# titles
+        plot.title = element_text(hjust = 0.5, size=14, face="bold"),
+        axis.title.x = element_text(size=8, hjust = 0.9, face = "bold"),
+        axis.title.y = element_text(size=8, hjust = 0.9, face = "bold", angle = 90),
+        legend.title = element_text(size=10, face = "italic"),
+        plot.subtitle = element_text(hjust = 0.5, size=11),
+    
+        #legend
+        legend.position="none",
+        legend.text = element_text(size=10),
+        
+        #axis
+        axis.text.x = element_text(size=8),
+        axis.text.y = element_text(size=10),
+        #axis.line = element_line(color = "black", size = 1, linetype = 1))
+        
+        #grid
+        panel.grid.major.x = element_blank(),
+        panel.grid.major.y = element_line(color = "#D1D1D1", size = 0.3, linetype = 2),
+        
+        # Alterar a cor de fundo do gráfico completo (incluindo margens e títulos)
+        plot.background = element_rect(fill = "#F6F6F7"),
+        
+        # Alterar a cor de fundo do painel (área de plotagem) 
+        panel.background = element_rect(fill = "#F6F6F7"))
+
+autolesao_q1_plot
+```
+
+```{r, "filtro autolesao_q2"}
+autolesao_q2 <- data.frame(
+  alternativa = names(autolesao %>% select(X2a,X2b,X2c,X2d,X2e,X2f)),
+  qtd_marcada = as.numeric(colSums(autolesao %>% select(X2a,X2b,X2c,X2d,X2e,X2f) == 1, na.rm = TRUE))
+)
+
+autolesao_q2 <- autolesao_q2 %>% mutate(alternativa = case_when(
+  alternativa == "X2a" ~ "Tensão muscular",
+  alternativa == "X2b" ~ "Dor de Cabeça",
+  alternativa == "X2c" ~ "Dificuldade para respirar",
+  alternativa == "X2d" ~ "Insônia",
+  alternativa == "X2e" ~ "Coração acelerado",
+  alternativa == "X2f" ~ "Outra sensação"))
+```
+
+```{r, "plot autolesao_q2"}
+autolesao_q2_plot <- autolesao_q2 %>% ggplot(mapping = (aes(x=str_wrap(alternativa, width = 10),
+                                                            y = qtd_marcada))) +
+  
+  # Construindo gráficos
+  geom_col(fill = "#002952") + 
+  
+  # definindo Titulos
+  labs(title = "AUTOLESÃO - Questão 2", 
+       subtitle = "Como meu corpo mostra que algo não está bem com as minhas emoções?",
+       y = "qtd de alunos que assinalaram",
+       x= "Alternativas") + 
+  
+  # label
+  geom_text(aes(label = qtd_marcada), position = position_dodge(width = 0.9), vjust = -0.5, size = 3) + 
+  
+  scale_y_continuous(breaks=seq(0,23,2)) +
+  ylim(0, 23) +
+
+       
+  # alterando aparecia
+  theme_classic( base_family = "montserrat")+
+  theme(# titles
+        plot.title = element_text(hjust = 0.5, size=14, face="bold"),
+        axis.title.x = element_text(size=8, hjust = 0.9, face = "bold"),
+        axis.title.y = element_text(size=8, hjust = 0.9, face = "bold", angle = 90),
+        legend.title = element_text(size=10, face = "italic"),
+        plot.subtitle = element_text(hjust = 0.5, size=11),
+    
+        #legend
+        legend.position="none",
+        legend.text = element_text(size=10),
+        
+        #axis
+        axis.text.x = element_text(size=8),
+        axis.text.y = element_text(size=10),
+        #axis.line = element_line(color = "black", size = 1, linetype = 1))
+        
+        #grid
+        panel.grid.major.x = element_blank(),
+        panel.grid.major.y = element_line(color = "#D1D1D1", size = 0.3, linetype = 2),
+        
+        # Alterar a cor de fundo do gráfico completo (incluindo margens e títulos)
+        plot.background = element_rect(fill = "#F6F6F7"),
+        
+        # Alterar a cor de fundo do painel (área de plotagem) 
+        panel.background = element_rect(fill = "#F6F6F7"))
+
+autolesao_q2_plot
+```
+# CHAID ANALYSIS
+
+```{r}
+chaid_df = dados
+
+```
+
+```{r}
+# definindo parametros da Analise CHAID
+# alterar os valores conforme necessidade
+
+ctrl <- chaid_control (alpha2 = 0.05, alpha3 = -1, alpha4 = 0.10, minsplit = 20, minbucket = 7, minprob = 0.01, stump = FALSE, maxheight = -1)
+
+# rodando modelo CHAID
+
+chaid_model <-chaid(X4e ~ .,
+                      data = dados, control = ctrl)
+
+
+
+plot(chaid_model)
+```
+
+```{r "CHAID plot", echo=TRUE, message=FALSE, warning=FALSE}
+
+# salvar diagrama como imagem
+
+png(filename = here("ocr-chaid-project","outcome", "CHAID.png"), width = 4000, height = 2000, res = 300)
+
+chaid_plot = plot(
+  chaid_model,cex = 0.7,
+  terminal_panel = node_barplot(chaid_model,
+                                text = c("vertical"),
+                                just = c("top"),gp = gpar(fontsize = 14)),
+  inner_panel = node_inner,
+  tp_args = list(gp = grid::gpar(fontsize = 14)),
+  gp = grid::gpar(fontsize = 14)
+)+
+theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 2),
+      panel.background = element_rect(fill = "red")) # <-- Linha adicionada
+
+dev.off()
+
+```
+
+
+
